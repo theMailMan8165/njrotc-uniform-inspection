@@ -1,0 +1,1286 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NJROTC Uniform Inspection</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --navy:#0b1f33;
+  --blue:#164a73;
+  --light:#f4f7fa;
+  --border:#d7dee6;
+  --bad:#b42318;
+  --good:#147a4b
+}
+
+*{
+  box-sizing:border-box
+}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+  background:var(--light);
+  color:#17202a
+}
+
+header{
+  background:var(--navy);
+  color:white;
+  padding:18px 20px;
+  position:sticky;
+  top:0;
+  z-index:5
+}
+
+header h1{
+  margin:0;
+  font-size:22px
+}
+
+header p{
+  margin:4px 0 0;
+  opacity:.8;
+  font-size:13px
+}
+
+main{
+  max-width:1000px;
+  margin:auto;
+  padding:18px
+}
+
+.card{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px #0000000b
+}
+
+.row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:end
+}
+
+.field{
+  flex:1;
+  min-width:190px
+}
+
+label{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  margin-bottom:5px
+}
+
+input,select,button{
+  font:inherit
+}
+
+input,select{
+  width:100%;
+  padding:11px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:white
+}
+
+button{
+  border:0;
+  border-radius:9px;
+  padding:11px 14px;
+  font-weight:700;
+  cursor:pointer
+}
+
+.primary{
+  background:var(--blue);
+  color:white
+}
+
+.secondary{
+  background:#e9eef3
+}
+
+.danger{
+  background:#fee4e2;
+  color:var(--bad)
+}
+
+.score{
+  font-size:38px;
+  font-weight:800;
+  text-align:center;
+  color:var(--good)
+}
+
+.score small{
+  display:block;
+  font-size:12px;
+  color:#667085
+}
+
+.items{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(270px,1fr));
+  gap:10px
+}
+
+.item{
+  border:1px solid var(--border);
+  border-radius:11px;
+  padding:12px;
+  cursor:pointer;
+  user-select:none;
+  background:white
+}
+
+.item.missed{
+  border-color:#e7a39d;
+  background:#fff5f4
+}
+
+.item strong{
+  display:block
+}
+
+.item span{
+  font-size:12px;
+  color:#667085
+}
+
+.deduct{
+  float:right;
+  font-weight:800;
+  color:var(--bad)
+}
+
+.deduction-control{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--border)
+}
+
+.deduction-control label{
+  font-size:11px;
+  color:#667085
+}
+
+.deduction-control input{
+  padding:7px;
+  margin-top:3px;
+}
+
+.max-text{
+  font-size:11px;
+  color:#667085;
+  margin-top:4px;
+}
+
+.overall-limit{
+  margin-top:15px;
+  padding:12px;
+  background:#f6f8fa;
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+
+.overall-limit strong{
+  display:block;
+  margin-bottom:5px;
+}
+
+.overall-warning{
+  color:var(--bad);
+  font-weight:700;
+  font-size:12px;
+  margin-top:5px;
+  display:none;
+}
+
+.history{
+  overflow:auto
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:650px
+}
+
+th,td{
+  padding:9px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+  font-size:13px
+}
+
+th{
+  background:#f6f8fa
+}
+
+.empty{
+  text-align:center;
+  color:#667085;
+  padding:20px
+}
+
+#toast{
+  position:fixed;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#17202a;
+  color:white;
+  padding:10px 14px;
+  border-radius:9px;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>NJROTC Uniform Inspection</h1>
+  <p>Tap a requirement when it is missed. The score updates automatically.</p>
+</header>
+
+<main>
+
+<section class="card">
+
+<div class="row">
+
+<div class="field">
+  <label>Cadet name</label>
+  <input id="cadet" placeholder="e.g. Smith, John">
+</div>
+
+<div class="field">
+  <label>Inspection date</label>
+  <input id="date" type="date">
+</div>
+
+<div>
+  <button class="secondary" onclick="clearInspection()">Clear</button>
+</div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<div class="score" id="score">
+  100
+  <small>POINTS</small>
+</div>
+
+<div id="missedText"
+     style="text-align:center;color:#667085;margin-bottom:14px">
+  No deductions
+</div>
+
+<div class="items" id="items"></div>
+
+<div class="overall-limit">
+
+  <strong>Overall Maximum Deduction</strong>
+
+  <div class="row">
+
+    <div class="field">
+      <input
+        id="overallMax"
+        type="number"
+        min="0"
+        value="100"
+        onchange="updateOverallMax()"
+      >
+    </div>
+
+    <div style="font-size:13px;color:#667085">
+      maximum points that can be deducted from this inspection
+    </div>
+
+  </div>
+
+  <div id="overallWarning" class="overall-warning">
+    The total deductions have reached the maximum allowed.
+  </div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<div class="row">
+
+<button class="primary" onclick="saveInspection()">
+  Save Inspection
+</button>
+
+<button class="secondary" onclick="exportPDF()">
+  Export PDF
+</button>
+
+<button class="danger" onclick="clearHistory()">
+  Clear History
+</button>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2 style="margin-top:0">
+  Inspection History
+</h2>
+
+<div class="history">
+
+<table>
+
+<thead>
+
+<tr>
+  <th>Date</th>
+  <th>Cadet</th>
+  <th>Score</th>
+  <th>Missed requirements</th>
+</tr>
+
+</thead>
+
+<tbody id="history"></tbody>
+
+</table>
+
+</div>
+
+<div id="empty" class="empty">
+  No inspections saved yet.
+</div>
+
+</section>
+
+</main>
+
+<div id="toast"></div>
+
+
+<script>
+
+/*
+  Each requirement is:
+
+  [Name, Description, Maximum Deduction]
+*/
+
+const requirements = [
+
+["Cap",
+ "Cleanliness / neatness / brim / chinstrap / buttons / cover / insignia",
+ 5],
+
+["Hair",
+ "Length / neatness / taper / cleanliness / style",
+ 5],
+
+["Shave",
+ "Neck / face / mustache",
+ 5],
+
+["Jewelry",
+ "Amount / type / appropriateness",
+ 3],
+
+["Shirt / Jacket",
+ "Fit / cleanliness / press",
+ 5],
+
+["NJROTC Patch",
+ "Position / condition / sewing",
+ 3],
+
+["Collar Devices",
+ "Condition / position",
+ 3],
+
+["Tie",
+ "Position / condition",
+ 3],
+
+["Name Tag",
+ "Position / condition",
+ 3],
+
+["Ribbons",
+ "Order / position / condition",
+ 5],
+
+["Fingernails",
+ "Cleanliness / trim / color",
+ 2],
+
+["Gig Line",
+ "Trousers / belt buckle / shirt alignment",
+ 5],
+
+["Belt / Buckle",
+ "Fit / condition",
+ 3],
+
+["Trousers / Skirt / Slacks",
+ "Length / cleanliness / fit / press",
+ 5],
+
+["Shoes",
+ "Condition / shine / heels / welts",
+ 5],
+
+["Socks / Hose",
+ "Color / condition",
+ 2],
+
+["Posture / Bearing",
+ "Overall military bearing",
+ 5],
+
+["Other Deduction",
+ "Unit-specific deduction",
+ 10]
+
+];
+
+
+let missed = new Set();
+
+let deductions = {};
+
+let overallMax = 30;
+
+let history = JSON.parse(
+  localStorage.getItem("njrotcInspectionHistory") || "[]"
+);
+
+
+document.getElementById("date").value =
+  new Date().toISOString().slice(0,10);
+
+
+
+function renderItems(){
+
+  const box =
+    document.getElementById("items");
+
+  box.innerHTML = "";
+
+
+  requirements.forEach((r,i)=>{
+
+    const d =
+      document.createElement("div");
+
+
+    d.className =
+      "item" +
+      (missed.has(i) ? " missed" : "");
+
+
+    d.onclick = (event) => {
+
+      /*
+        Don't toggle the requirement when
+        clicking inside the deduction input.
+      */
+
+      if(event.target.tagName === "INPUT"){
+        return;
+      }
+
+      toggle(i);
+
+    };
+
+
+    const currentDeduction =
+      deductions[i] || 0;
+
+
+    const deductionText =
+      missed.has(i)
+      ? `-${currentDeduction}`
+      : `max -${r[2]}`;
+
+
+    d.innerHTML = `
+
+      <span class="deduct">
+        ${deductionText}
+      </span>
+
+      <strong>
+        ${r[0]}
+      </strong>
+
+      <span>
+        ${r[1]}
+      </span>
+
+      ${
+        missed.has(i)
+
+        ?
+
+        `
+
+        <div class="deduction-control">
+
+          <label>
+            Points to deduct
+          </label>
+
+          <input
+            type="number"
+            min="0"
+            max="${r[2]}"
+            value="${currentDeduction}"
+            data-index="${i}"
+            onclick="event.stopPropagation()"
+            onchange="setDeduction(${i}, this.value)"
+          >
+
+          <div class="max-text">
+            Maximum deduction: ${r[2]} point(s)
+          </div>
+
+        </div>
+
+        `
+
+        :
+
+        ""
+
+      }
+
+    `;
+
+
+    box.appendChild(d);
+
+  });
+
+
+  updateScore();
+
+}
+
+
+
+function toggle(i){
+
+  if(missed.has(i)){
+
+    missed.delete(i);
+
+    deductions[i] = 0;
+
+  }else{
+
+    missed.add(i);
+
+    deductions[i] =
+      requirements[i][2];
+
+  }
+
+  renderItems();
+
+}
+
+
+
+function setDeduction(i,value){
+
+  let amount =
+    Number(value);
+
+
+  if(isNaN(amount)){
+    amount = 0;
+  }
+
+
+  /*
+    Make sure the deduction cannot exceed
+    this requirement's maximum.
+  */
+
+  amount =
+    Math.max(
+      0,
+      Math.min(
+        requirements[i][2],
+        amount
+      )
+    );
+
+
+  deductions[i] = amount;
+
+
+  /*
+    Check the overall maximum.
+  */
+
+  let total = calculateDeduction();
+
+
+  if(total > overallMax){
+
+    const excess =
+      total - overallMax;
+
+
+    /*
+      Reduce the deduction that was just changed
+      so the overall maximum is respected.
+    */
+
+    deductions[i] =
+      Math.max(
+        0,
+        deductions[i] - excess
+      );
+
+
+    toast(
+      `Overall maximum is ${overallMax} points.`
+    );
+
+  }
+
+
+  renderItems();
+
+}
+
+
+
+function calculateDeduction(){
+
+  let total = 0;
+
+
+  missed.forEach(i=>{
+
+    total +=
+      deductions[i] || 0;
+
+  });
+
+
+  return total;
+
+}
+
+
+
+function updateScore(){
+
+  const deduction =
+    Math.min(
+      calculateDeduction(),
+      overallMax
+    );
+
+
+  const score =
+    Math.max(
+      0,
+      100 - deduction
+    );
+
+
+  document.getElementById("score").innerHTML =
+
+    `${score}<small>POINTS</small>`;
+
+
+  document.getElementById("missedText").textContent =
+
+    missed.size
+
+    ?
+
+    `${missed.size} item(s) missed • ${deduction} point(s) deducted`
+
+    :
+
+    "No deductions";
+
+
+  const warning =
+    document.getElementById("overallWarning");
+
+
+  warning.style.display =
+    deduction >= overallMax && missed.size
+    ? "block"
+    : "none";
+
+}
+
+
+
+function updateOverallMax(){
+
+  let value =
+    Number(
+      document.getElementById("overallMax").value
+    );
+
+
+  if(isNaN(value)){
+    value = 30;
+  }
+
+
+  value =
+    Math.max(0,Math.min(100,value));
+
+
+  overallMax = value;
+
+
+  /*
+    If existing deductions are greater than
+    the new overall limit, reduce them.
+  */
+
+  let total =
+    calculateDeduction();
+
+
+  if(total > overallMax){
+
+    let excess =
+      total - overallMax;
+
+
+    /*
+      Reduce deductions starting from
+      the last requirement.
+    */
+
+    const indexes =
+      [...missed].reverse();
+
+
+    for(const i of indexes){
+
+      if(excess <= 0){
+        break;
+      }
+
+
+      const amount =
+        deductions[i] || 0;
+
+
+      const reduction =
+        Math.min(
+          amount,
+          excess
+        );
+
+
+      deductions[i] -= reduction;
+
+      excess -= reduction;
+
+    }
+
+
+    toast(
+      `Deductions adjusted to the ${overallMax}-point maximum.`
+    );
+
+  }
+
+
+  renderItems();
+
+}
+
+
+
+function clearInspection(){
+
+  missed.clear();
+
+  deductions = {};
+
+  document.getElementById("cadet").value = "";
+
+  renderItems();
+
+}
+
+
+
+function toast(t){
+
+  const x =
+    document.getElementById("toast");
+
+  x.textContent = t;
+
+  x.style.display = "block";
+
+
+  setTimeout(
+    ()=>x.style.display="none",
+    1800
+  );
+
+}
+
+
+
+function saveInspection(){
+
+  const cadet =
+    document.getElementById("cadet")
+    .value
+    .trim();
+
+
+  if(!cadet){
+
+    toast("Enter a cadet name first.");
+
+    return;
+
+  }
+
+
+  const deduction =
+    calculateDeduction();
+
+
+  const score =
+    Math.max(
+      0,
+      100 - deduction
+    );
+
+
+  const missedRequirements =
+
+    [...missed].map(i=>({
+
+      name:
+        requirements[i][0],
+
+      deduction:
+        deductions[i] || 0,
+
+      maximum:
+        requirements[i][2]
+
+    }));
+
+
+  const rec = {
+
+    date:
+      document.getElementById("date").value,
+
+    cadet:
+      cadet,
+
+    score:
+      score,
+
+    deduction:
+      deduction,
+
+    missed:
+      missedRequirements
+
+  };
+
+
+  history.unshift(rec);
+
+
+  localStorage.setItem(
+    "njrotcInspectionHistory",
+    JSON.stringify(history)
+  );
+
+
+  renderHistory();
+
+  toast("Inspection saved.");
+
+  clearInspection();
+
+}
+
+
+
+function renderHistory(){
+
+  const body =
+    document.getElementById("history");
+
+  body.innerHTML = "";
+
+
+  document.getElementById("empty").style.display =
+    history.length
+    ? "none"
+    : "block";
+
+
+  history.forEach(r=>{
+
+    const tr =
+      document.createElement("tr");
+
+
+    /*
+      Support both the new format and
+      older saved inspections.
+    */
+
+    let missedText;
+
+
+    if(Array.isArray(r.missed)){
+
+      missedText =
+        r.missed.length
+
+        ?
+
+        r.missed.map(item=>{
+
+          if(typeof item === "string"){
+            return escapeHtml(item);
+          }
+
+          return `${escapeHtml(item.name)} (-${item.deduction})`;
+
+        }).join(", ")
+
+        :
+
+        "None";
+
+    }else{
+
+      missedText =
+        "None";
+
+    }
+
+
+    tr.innerHTML = `
+
+      <td>
+        ${escapeHtml(r.date || "")}
+      </td>
+
+      <td>
+        ${escapeHtml(r.cadet || "")}
+      </td>
+
+      <td>
+        <b>${r.score}</b>
+      </td>
+
+      <td>
+        ${missedText}
+      </td>
+
+    `;
+
+
+    body.appendChild(tr);
+
+  });
+
+}
+
+
+
+function escapeHtml(s){
+
+  return String(s).replace(
+    /[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
+    }[c])
+  );
+
+}
+
+
+
+function clearHistory(){
+
+  if(
+    confirm(
+      "Delete all saved inspections on this device?"
+    )
+  ){
+
+    history = [];
+
+    localStorage.removeItem(
+      "njrotcInspectionHistory"
+    );
+
+    renderHistory();
+
+  }
+
+}
+
+
+
+function exportPDF(){
+
+  const cadet =
+    document.getElementById("cadet")
+    .value
+    .trim();
+
+
+  const date =
+    document.getElementById("date")
+    .value;
+
+
+  if(!cadet){
+
+    toast("Enter a cadet name first.");
+
+    return;
+
+  }
+
+
+  const {jsPDF} =
+    window.jspdf;
+
+
+  const pdf =
+    new jsPDF();
+
+
+  const deduction =
+    calculateDeduction();
+
+
+  const score =
+    Math.max(
+      0,
+      100 - deduction
+    );
+
+
+  /*
+    TITLE
+  */
+
+  pdf.setFontSize(20);
+
+  pdf.setFont(undefined,"bold");
+
+  pdf.text(
+    "NJROTC Uniform Inspection",
+    20,
+    20
+  );
+
+
+  /*
+    INFORMATION
+  */
+
+  pdf.setFontSize(12);
+
+  pdf.setFont(undefined,"normal");
+
+  pdf.text(
+    `Cadet: ${cadet}`,
+    20,
+    32
+  );
+
+  pdf.text(
+    `Date: ${date}`,
+    20,
+    40
+  );
+
+
+  /*
+    SCORE
+  */
+
+  pdf.setFontSize(18);
+
+  pdf.setFont(undefined,"bold");
+
+  pdf.text(
+    `Score: ${score}/100`,
+    20,
+    55
+  );
+
+
+  pdf.setFontSize(12);
+
+  pdf.setFont(undefined,"normal");
+
+  pdf.text(
+    `Total Deduction: ${deduction} points`,
+    20,
+    63
+  );
+
+  pdf.text(
+    `Maximum Possible Deduction: ${overallMax} points`,
+    20,
+    70
+  );
+
+
+  /*
+    REQUIREMENTS
+  */
+
+  let y = 85;
+
+
+  requirements.forEach((r,i)=>{
+
+    const wasMissed =
+      missed.has(i);
+
+
+    const amount =
+      deductions[i] || 0;
+
+
+    let status;
+
+
+    if(wasMissed){
+
+      status =
+        `MISSED (-${amount}/${r[2]})`;
+
+    }else{
+
+      status =
+        "PASS";
+
+    }
+
+
+    pdf.setFontSize(11);
+
+    pdf.setFont(undefined,"bold");
+
+    pdf.text(
+      `${r[0]}: ${status}`,
+      20,
+      y
+    );
+
+
+    pdf.setFont(undefined,"normal");
+
+    pdf.setFontSize(9);
+
+    pdf.text(
+      r[1],
+      25,
+      y + 6
+    );
+
+
+    y += 16;
+
+
+    if(y > 275){
+
+      pdf.addPage();
+
+      y = 20;
+
+    }
+
+  });
+
+
+  /*
+    SAVE
+  */
+
+  const safeName =
+    cadet.replace(
+      /[^a-z0-9]/gi,
+      "_"
+    );
+
+
+  pdf.save(
+    `NJROTC-${safeName}-Inspection.pdf`
+  );
+
+
+  toast("PDF exported.");
+
+}
+
+
+
+renderItems();
+
+renderHistory();
+
+</script>
+
+</body>
+</html>
+```
