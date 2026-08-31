@@ -219,6 +219,14 @@ th{
   background:#f6f8fa
 }
 
+.delete-history-btn{
+  background:#fee4e2;
+  color:var(--bad);
+  padding:7px 10px;
+  font-size:12px;
+  margin-left:8px
+}
+
 .empty{
   text-align:center;
   color:#667085;
@@ -331,6 +339,7 @@ th{
   <th>Cadet</th>
   <th>Score</th>
   <th>Missed requirements</th>
+  <th>Action</th>
 </tr>
 
 </thead>
@@ -867,6 +876,12 @@ function renderHistory(){
         ${missedText}
       </td>
 
+      <td>
+        <button class="delete-history-btn" onclick="deleteInspection(${history.indexOf(r)})">
+          Delete
+        </button>
+      </td>
+
     `;
 
 
@@ -893,6 +908,30 @@ function escapeHtml(s){
 
 }
 
+
+
+function deleteInspection(index){
+
+  const inspection = history[index];
+
+  if(!inspection){
+    return;
+  }
+
+  if(confirm(`Delete the inspection for ${inspection.cadet || "this cadet"}?`)){
+
+    history.splice(index, 1);
+
+    localStorage.setItem(
+      "njrotcInspectionHistory",
+      JSON.stringify(history)
+    );
+
+    renderHistory();
+    toast("Inspection deleted.");
+  }
+
+}
 
 
 function clearHistory(){
