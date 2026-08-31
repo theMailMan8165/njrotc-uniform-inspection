@@ -186,29 +186,20 @@ button{
   margin-top:4px;
 }
 
-.overall-limit{
-  margin-top:15px;
-  padding:12px;
-  background:#f6f8fa;
-  border:1px solid var(--border);
-  border-radius:10px;
-}
-
-.overall-limit strong{
-  display:block;
-  margin-bottom:5px;
-}
-
-.overall-warning{
-  color:var(--bad);
-  font-weight:700;
-  font-size:12px;
-  margin-top:5px;
-  display:none;
-}
-
 .history{
   overflow:auto
+}
+
+.history-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px
+}
+
+.history-header h2{
+  margin:0
 }
 
 table{
@@ -294,34 +285,6 @@ th{
 
 <div class="items" id="items"></div>
 
-<div class="overall-limit">
-
-  <strong>Overall Maximum Deduction</strong>
-
-  <div class="row">
-
-    <div class="field">
-      <input
-        id="overallMax"
-        type="number"
-        min="0"
-        value="100"
-        onchange="updateOverallMax()"
-      >
-    </div>
-
-    <div style="font-size:13px;color:#667085">
-      maximum points that can be deducted from this inspection
-    </div>
-
-  </div>
-
-  <div id="overallWarning" class="overall-warning">
-    The total deductions have reached the maximum allowed.
-  </div>
-
-</div>
-
 </section>
 
 
@@ -348,9 +311,17 @@ th{
 
 <section class="card">
 
-<h2 style="margin-top:0">
-  Inspection History
-</h2>
+<div class="history-header">
+
+  <h2>
+    Inspection History
+  </h2>
+
+  <button class="secondary" onclick="exportHistoryPDF()">
+    Export History PDF
+  </button>
+
+</div>
 
 <div class="history">
 
@@ -476,8 +447,6 @@ const requirements = [
 let missed = new Set();
 
 let deductions = {};
-
-let overallMax = 30;
 
 let history = JSON.parse(
   localStorage.getItem("njrotcInspectionHistory") || "[]"
@@ -651,38 +620,6 @@ function setDeduction(i,value){
   deductions[i] = amount;
 
 
-  /*
-    Check the overall maximum.
-  */
-
-  let total = calculateDeduction();
-
-
-  if(total > overallMax){
-
-    const excess =
-      total - overallMax;
-
-
-    /*
-      Reduce the deduction that was just changed
-      so the overall maximum is respected.
-    */
-
-    deductions[i] =
-      Math.max(
-        0,
-        deductions[i] - excess
-      );
-
-
-    toast(
-      `Overall maximum is ${overallMax} points.`
-    );
-
-  }
-
-
   renderItems();
 
 }
@@ -711,10 +648,7 @@ function calculateDeduction(){
 function updateScore(){
 
   const deduction =
-    Math.min(
-      calculateDeduction(),
-      overallMax
-    );
+    calculateDeduction();
 
 
   const score =
@@ -740,98 +674,6 @@ function updateScore(){
     :
 
     "No deductions";
-
-
-  const warning =
-    document.getElementById("overallWarning");
-
-
-  warning.style.display =
-    deduction >= overallMax && missed.size
-    ? "block"
-    : "none";
-
-}
-
-
-
-function updateOverallMax(){
-
-  let value =
-    Number(
-      document.getElementById("overallMax").value
-    );
-
-
-  if(isNaN(value)){
-    value = 30;
-  }
-
-
-  value =
-    Math.max(0,Math.min(100,value));
-
-
-  overallMax = value;
-
-
-  /*
-    If existing deductions are greater than
-    the new overall limit, reduce them.
-  */
-
-  let total =
-    calculateDeduction();
-
-
-  if(total > overallMax){
-
-    let excess =
-      total - overallMax;
-
-
-    /*
-      Reduce deductions starting from
-      the last requirement.
-    */
-
-    const indexes =
-      [...missed].reverse();
-
-
-    for(const i of indexes){
-
-      if(excess <= 0){
-        break;
-      }
-
-
-      const amount =
-        deductions[i] || 0;
-
-
-      const reduction =
-        Math.min(
-          amount,
-          excess
-        );
-
-
-      deductions[i] -= reduction;
-
-      excess -= reduction;
-
-    }
-
-
-    toast(
-      `Deductions adjusted to the ${overallMax}-point maximum.`
-    );
-
-  }
-
-
-  renderItems();
 
 }
 
@@ -1180,18 +1022,12 @@ function exportPDF(){
     63
   );
 
-  pdf.text(
-    `Maximum Possible Deduction: ${overallMax} points`,
-    20,
-    70
-  );
-
 
   /*
     REQUIREMENTS
   */
 
-  let y = 85;
+  let y = 75;
 
 
   requirements.forEach((r,i)=>{
@@ -1273,6 +1109,358 @@ function exportPDF(){
 
 
   toast("PDF exported.");
+
+}
+
+
+/*
+  EXPORT INSPECTION HISTORY PDF
+*/
+
+function exportHistoryPDF(){
+
+  if(history.length === 0){
+
+    toast("There is no inspection history to export.");
+
+    return;
+
+  }
+
+
+  const {jsPDF} =
+    window.jspdf;
+
+
+  const pdf =
+    new jsPDF({
+      orientation:"landscape",
+      unit:"mm",
+      format:"letter"
+    });
+
+
+  /*
+    TITLE
+  */
+
+  pdf.setFontSize(20);
+
+  pdf.setFont(undefined,"bold");
+
+  pdf.text(
+    "NJROTC Inspection History",
+    14,
+    18
+  );
+
+
+  pdf.setFontSize(10);
+
+  pdf.setFont(undefined,"normal");
+
+  pdf.text(
+    `Total Inspections: ${history.length}`,
+    14,
+    25
+  );
+
+
+  /*
+    TABLE SETTINGS
+  */
+
+  const startY = 34;
+
+  const margin = 14;
+
+  const pageWidth = 279;
+
+  const tableWidth =
+    pageWidth - (margin * 2);
+
+
+  const dateWidth = 32;
+
+  const cadetWidth = 55;
+
+  const scoreWidth = 25;
+
+  const missedWidth =
+    tableWidth -
+    dateWidth -
+    cadetWidth -
+    scoreWidth;
+
+
+  const rowHeight = 10;
+
+
+  /*
+    DRAW TABLE HEADER
+  */
+
+  function drawHeader(y){
+
+    pdf.setFillColor(230,235,240);
+
+    pdf.rect(
+      margin,
+      y - 7,
+      tableWidth,
+      rowHeight,
+      "F"
+    );
+
+
+    pdf.setDrawColor(180,188,198);
+
+    pdf.rect(
+      margin,
+      y - 7,
+      tableWidth,
+      rowHeight
+    );
+
+
+    pdf.setFontSize(9);
+
+    pdf.setFont(undefined,"bold");
+
+
+    pdf.text(
+      "Date",
+      margin + 3,
+      y
+    );
+
+
+    pdf.text(
+      "Cadet",
+      margin + dateWidth + 3,
+      y
+    );
+
+
+    pdf.text(
+      "Score",
+      margin +
+      dateWidth +
+      cadetWidth +
+      3,
+      y
+    );
+
+
+    pdf.text(
+      "Missed Requirements",
+      margin +
+      dateWidth +
+      cadetWidth +
+      scoreWidth +
+      3,
+      y
+    );
+
+  }
+
+
+  let y = startY;
+
+  drawHeader(y);
+
+  y += rowHeight;
+
+
+  /*
+    DRAW EACH INSPECTION
+  */
+
+  history.forEach((r,index)=>{
+
+    let missedText = "None";
+
+
+    if(Array.isArray(r.missed)){
+
+      if(r.missed.length){
+
+        missedText =
+          r.missed.map(item=>{
+
+            if(typeof item === "string"){
+              return item;
+            }
+
+            return `${item.name} (-${item.deduction})`;
+
+          }).join(", ");
+
+      }
+
+    }
+
+
+    /*
+      Split long missed-requirement text
+      so it fits inside the table.
+    */
+
+    pdf.setFontSize(8);
+
+    pdf.setFont(undefined,"normal");
+
+
+    const missedLines =
+      pdf.splitTextToSize(
+        missedText,
+        missedWidth - 6
+      );
+
+
+    const linesNeeded =
+      Math.max(
+        1,
+        missedLines.length
+      );
+
+
+    const actualRowHeight =
+      Math.max(
+        rowHeight,
+        linesNeeded * 5 + 4
+      );
+
+
+    /*
+      Add a new page if necessary
+    */
+
+    if(y + actualRowHeight > 195){
+
+      pdf.addPage();
+
+      y = 20;
+
+      drawHeader(y);
+
+      y += rowHeight;
+
+    }
+
+
+    /*
+      Draw row border
+    */
+
+    pdf.setDrawColor(210,216,224);
+
+    pdf.rect(
+      margin,
+      y - 7,
+      tableWidth,
+      actualRowHeight
+    );
+
+
+    /*
+      Vertical column lines
+    */
+
+    pdf.line(
+      margin + dateWidth,
+      y - 7,
+      margin + dateWidth,
+      y - 7 + actualRowHeight
+    );
+
+
+    pdf.line(
+      margin + dateWidth + cadetWidth,
+      y - 7,
+      margin + dateWidth + cadetWidth,
+      y - 7 + actualRowHeight
+    );
+
+
+    pdf.line(
+      margin + dateWidth + cadetWidth + scoreWidth,
+      y - 7,
+      margin + dateWidth + cadetWidth + scoreWidth,
+      y - 7 + actualRowHeight
+    );
+
+
+    /*
+      Date
+    */
+
+    pdf.text(
+      String(r.date || ""),
+      margin + 3,
+      y
+    );
+
+
+    /*
+      Cadet
+    */
+
+    pdf.text(
+      String(r.cadet || ""),
+      margin + dateWidth + 3,
+      y
+    );
+
+
+    /*
+      Score
+    */
+
+    pdf.setFont(undefined,"bold");
+
+    pdf.text(
+      `${r.score}/100`,
+      margin +
+      dateWidth +
+      cadetWidth +
+      3,
+      y
+    );
+
+
+    /*
+      Missed requirements
+    */
+
+    pdf.setFont(undefined,"normal");
+
+    pdf.text(
+      missedLines,
+      margin +
+      dateWidth +
+      cadetWidth +
+      scoreWidth +
+      3,
+      y
+    );
+
+
+    y += actualRowHeight;
+
+  });
+
+
+  /*
+    SAVE PDF
+  */
+
+  pdf.save(
+    "NJROTC-Inspection-History.pdf"
+  );
+
+
+  toast("History PDF exported.");
 
 }
 
