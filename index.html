@@ -186,6 +186,68 @@ button{
   margin-top:4px;
 }
 
+.comment-btn{
+  margin-top:10px;
+  width:100%;
+  border:1px solid var(--border);
+}
+
+.comment-btn.has-comment{
+  background:#e8f1f8;
+  color:var(--blue);
+  border-color:#b8ccdc;
+}
+
+.comment-dialog{
+  position:fixed;
+  inset:0;
+  background:#00000066;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:20;
+  padding:20px;
+}
+
+.comment-dialog.show{
+  display:flex;
+}
+
+.comment-box{
+  width:min(520px,100%);
+  background:white;
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 10px 35px #00000030;
+}
+
+.comment-box h3{
+  margin:0 0 6px;
+}
+
+.comment-box p{
+  margin:0 0 12px;
+  color:#667085;
+  font-size:13px;
+}
+
+.comment-box textarea{
+  width:100%;
+  min-height:130px;
+  resize:vertical;
+  padding:11px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  font:inherit;
+}
+
+.comment-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:12px;
+}
+
 .history{
   overflow:auto
 }
@@ -293,6 +355,16 @@ th{
 
 <div class="items" id="items"></div>
 
+<div style="margin-top:12px;">
+  <button
+    type="button"
+    class="comment-btn secondary"
+    onclick="openComment()"
+  >
+    Comment
+  </button>
+</div>
+
 </section>
 
 
@@ -359,6 +431,24 @@ th{
 </main>
 
 <div id="toast"></div>
+
+<div id="commentDialog" class="comment-dialog">
+  <div class="comment-box">
+    <h3 id="commentTitle">Comment</h3>
+    <p>Write a note about this inspection. It will appear on the exported inspection PDFs.</p>
+
+    <textarea id="commentInput" placeholder="Enter comment..."></textarea>
+
+    <div class="comment-actions">
+      <button class="secondary" type="button" onclick="closeComment()">
+        Cancel
+      </button>
+      <button class="primary" type="button" onclick="saveComment()">
+        Save Comment
+      </button>
+    </div>
+  </div>
+</div>
 
 
 <script>
@@ -454,6 +544,8 @@ let missed = new Set();
 
 let deductions = {};
 
+let comments = {};
+
 let history = JSON.parse(
   localStorage.getItem("njrotcInspectionHistory") || "[]"
 );
@@ -501,7 +593,6 @@ function renderItems(){
 
     const currentDeduction =
       deductions[i] || 0;
-
 
     const deductionText =
       missed.has(i)
@@ -556,12 +647,11 @@ function renderItems(){
 
         :
 
-        ""
+        ``
 
       }
 
     `;
-
 
     box.appendChild(d);
 
@@ -632,6 +722,35 @@ function setDeduction(i,value){
 
 
 
+function openComment(){
+
+  document.getElementById("commentInput").value =
+    comments || "";
+
+  document.getElementById("commentDialog").classList.add("show");
+
+  setTimeout(
+    () => document.getElementById("commentInput").focus(),
+    0
+  );
+
+}
+
+function closeComment(){
+
+  document.getElementById("commentDialog").classList.remove("show");
+
+}
+
+function saveComment(){
+
+  comments =
+    document.getElementById("commentInput").value.trim();
+
+  closeComment();
+
+}
+
 function calculateDeduction(){
 
   let total = 0;
@@ -690,6 +809,8 @@ function clearInspection(){
   missed.clear();
 
   deductions = {};
+
+  comments = {};
 
   document.getElementById("cadet").value = "";
 
@@ -775,6 +896,9 @@ function saveInspection(){
 
     deduction:
       deduction,
+
+    comment:
+      comments || "",
 
     missed:
       missedRequirements
@@ -1113,9 +1237,7 @@ function exportPDF(){
       y + 6
     );
 
-
     y += 16;
-
 
     if(y > 275){
 
@@ -1127,6 +1249,33 @@ function exportPDF(){
 
   });
 
+
+  if(comments && comments.trim()){
+
+    if(y > 250){
+      pdf.addPage();
+      y = 20;
+    }
+
+    pdf.setFont(undefined,"bold");
+    pdf.setFontSize(11);
+    pdf.text("Comment:", 20, y);
+
+    pdf.setFont(undefined,"normal");
+    pdf.setFontSize(9);
+
+    const commentLines =
+      pdf.splitTextToSize(
+        comments.trim(),
+        165
+      );
+
+    pdf.text(
+      commentLines,
+      20,
+      y + 6
+    );
+  }
 
   /*
     SAVE
@@ -1334,6 +1483,12 @@ function exportHistoryPDF(){
 
       }
 
+    }
+
+
+    if(r.comment && r.comment.trim()){
+      missedText += (missedText === "None" ? "" : " | ") +
+        `Comment: ${r.comment.trim()}`;
     }
 
 
