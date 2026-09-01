@@ -94,6 +94,12 @@ input,select{
   background:white
 }
 
+select:disabled{
+  background:#eef1f4;
+  color:#667085;
+  cursor:not-allowed
+}
+
 button{
   border:0;
   border-radius:9px;
@@ -322,18 +328,41 @@ th{
 
 <div class="row">
 
+<!-- BLOCK DROPDOWN -->
 <div class="field">
-  <label>Cadet name</label>
-  <input id="cadet" placeholder="last name, first name">
+  <label>Block</label>
+
+  <select id="block" onchange="updateCadetList()">
+    <option value="">Select block...</option>
+    <option value="Block 1">Block 1</option>
+    <option value="Block 2">Block 2</option>
+    <option value="Block 3">Block 3</option>
+  </select>
 </div>
 
+
+<!-- CADET DROPDOWN -->
+<div class="field">
+  <label>Cadet</label>
+
+  <select id="cadet" disabled>
+    <option value="">Select a block first...</option>
+  </select>
+</div>
+
+
+<!-- DATE -->
 <div class="field">
   <label>Inspection date</label>
+
   <input id="date" type="date">
 </div>
 
+
 <div>
-  <button class="secondary" onclick="clearInspection()">Clear</button>
+  <button class="secondary" onclick="clearInspection()">
+    Clear
+  </button>
 </div>
 
 </div>
@@ -355,7 +384,9 @@ th{
 
 <div class="items" id="items"></div>
 
+
 <div style="margin-top:12px;">
+
   <button
     type="button"
     class="comment-btn secondary"
@@ -363,9 +394,19 @@ th{
   >
     Comment
   </button>
+
 </div>
 
-<div id="commentPreview" style="margin-top:10px; padding:10px; border:1px solid var(--border); border-radius:9px; background:#f8fafc; display:none;">
+
+<div
+  id="commentPreview"
+  style="margin-top:10px;
+         padding:10px;
+         border:1px solid var(--border);
+         border-radius:9px;
+         background:#f8fafc;
+         display:none;"
+>
 </div>
 
 </section>
@@ -378,7 +419,6 @@ th{
 <button class="primary" onclick="saveInspection()">
   Save Inspection
 </button>
-
 
 <button class="danger" onclick="clearHistory()">
   Clear History
@@ -411,6 +451,7 @@ th{
 
 <tr>
   <th>Date</th>
+  <th>Block</th>
   <th>Cadet</th>
   <th>Score</th>
   <th>Missed requirements</th>
@@ -433,33 +474,204 @@ th{
 
 </main>
 
+
 <div id="toast"></div>
 
-<div id="commentDialog" class="comment-dialog">
-  <div class="comment-box">
-    <h3 id="commentTitle">Comment</h3>
-    <p>Write a note about this inspection. It will appear on the exported inspection PDFs.</p>
 
-    <textarea id="commentInput" placeholder="Enter comment..."></textarea>
+<!-- COMMENT WINDOW -->
+
+<div id="commentDialog" class="comment-dialog">
+
+  <div class="comment-box">
+
+    <h3 id="commentTitle">
+      Comment
+    </h3>
+
+    <p>
+      Write a note about this inspection.
+      It will appear on the exported inspection PDFs.
+    </p>
+
+    <textarea
+      id="commentInput"
+      placeholder="Enter comment..."
+    ></textarea>
 
     <div class="comment-actions">
-      <button class="secondary" type="button" onclick="closeComment()">
+
+      <button
+        class="secondary"
+        type="button"
+        onclick="closeComment()"
+      >
         Cancel
       </button>
-      <button class="primary" type="button" onclick="saveComment()">
+
+      <button
+        class="primary"
+        type="button"
+        onclick="saveComment()"
+      >
         Save Comment
       </button>
+
     </div>
+
   </div>
+
 </div>
 
 
 <script>
 
-/*
-  Each requirement is:
 
-  [Name, Description, Maximum Deduction]
+/*
+==========================================================
+CADET ROSTER
+==========================================================
+
+EDIT THE NAMES BELOW.
+
+Put each cadet inside the block they belong to.
+
+Example:
+
+"Block 1": [
+  "Smith, John",
+  "Johnson, Michael"
+]
+
+You can add as many names as you want.
+==========================================================
+*/
+
+const cadetsByBlock = {
+
+  "Block 1": [
+    "Smith, John",
+    "Johnson, Michael",
+    "Williams, David",
+    "Brown, James"
+  ],
+
+  "Block 2": [
+    "Davis, Robert",
+    "Miller, Thomas",
+    "Wilson, Daniel",
+    "Moore, William"
+  ],
+
+  "Block 3": [
+    "Taylor, Joseph",
+    "Anderson, Christopher",
+    "Thomas, Matthew",
+    "Jackson, Andrew"
+  ]
+
+};
+
+
+
+/*
+==========================================================
+UPDATE CADET DROPDOWN
+==========================================================
+*/
+
+function updateCadetList(){
+
+  const block =
+    document.getElementById("block").value;
+
+  const cadetSelect =
+    document.getElementById("cadet");
+
+
+  /*
+    Remove the old cadet list.
+  */
+
+  cadetSelect.innerHTML = "";
+
+
+  /*
+    If no block has been selected,
+    disable the cadet dropdown.
+  */
+
+  if(!block){
+
+    cadetSelect.disabled = true;
+
+    const option =
+      document.createElement("option");
+
+    option.value = "";
+    option.textContent =
+      "Select a block first...";
+
+    cadetSelect.appendChild(option);
+
+    return;
+
+  }
+
+
+  /*
+    Enable the cadet dropdown.
+  */
+
+  cadetSelect.disabled = false;
+
+
+  /*
+    Add the placeholder.
+  */
+
+  const placeholder =
+    document.createElement("option");
+
+  placeholder.value = "";
+  placeholder.textContent =
+    "Select a cadet...";
+
+  cadetSelect.appendChild(placeholder);
+
+
+  /*
+    Get the cadets assigned to
+    the selected block.
+  */
+
+  const cadets =
+    cadetsByBlock[block] || [];
+
+
+  /*
+    Add each cadet to the dropdown.
+  */
+
+  cadets.forEach(name => {
+
+    const option =
+      document.createElement("option");
+
+    option.value = name;
+    option.textContent = name;
+
+    cadetSelect.appendChild(option);
+
+  });
+
+}
+
+
+
+/*
+==========================================================
+REQUIREMENTS
+==========================================================
 */
 
 const requirements = [
@@ -543,23 +755,37 @@ const requirements = [
 ];
 
 
-let missed = new Set();
+let missed =
+  new Set();
 
-let deductions = {};
+let deductions =
+  {};
 
-let comments = "";
+let comments =
+  "";
 
-let history = JSON.parse(
-  localStorage.getItem("njrotcInspectionHistory") || "[]"
-);
+
+let history =
+  JSON.parse(
+    localStorage.getItem(
+      "njrotcInspectionHistory"
+    ) || "[]"
+  );
 
 
 document.getElementById("date").value =
   new Date().toISOString().slice(0,10);
 
+
 updateCommentPreview();
 
 
+
+/*
+==========================================================
+RENDER REQUIREMENTS
+==========================================================
+*/
 
 function renderItems(){
 
@@ -598,6 +824,7 @@ function renderItems(){
 
     const currentDeduction =
       deductions[i] || 0;
+
 
     const deductionText =
       missed.has(i)
@@ -658,6 +885,7 @@ function renderItems(){
 
     `;
 
+
     box.appendChild(d);
 
   });
@@ -669,13 +897,20 @@ function renderItems(){
 
 
 
+/*
+==========================================================
+TOGGLE REQUIREMENT
+==========================================================
+*/
+
 function toggle(i){
 
   if(missed.has(i)){
 
     missed.delete(i);
 
-    deductions[i] = 0;
+    deductions[i] =
+      0;
 
   }else{
 
@@ -691,6 +926,12 @@ function toggle(i){
 }
 
 
+
+/*
+==========================================================
+CUSTOM DEDUCTION
+==========================================================
+*/
 
 function setDeduction(i,value){
 
@@ -718,7 +959,8 @@ function setDeduction(i,value){
     );
 
 
-  deductions[i] = amount;
+  deductions[i] =
+    amount;
 
 
   renderItems();
@@ -727,70 +969,126 @@ function setDeduction(i,value){
 
 
 
+/*
+==========================================================
+COMMENTS
+==========================================================
+*/
+
 function openComment(){
 
   document.getElementById("commentInput").value =
-    typeof comments === "string" ? comments : "";
+    typeof comments === "string"
+    ? comments
+    : "";
 
-  document.getElementById("commentDialog").classList.add("show");
+
+  document
+    .getElementById("commentDialog")
+    .classList.add("show");
+
 
   setTimeout(
-    () => document.getElementById("commentInput").focus(),
+    () =>
+      document
+        .getElementById("commentInput")
+        .focus(),
     0
   );
 
 }
 
+
 function closeComment(){
 
-  document.getElementById("commentDialog").classList.remove("show");
+  document
+    .getElementById("commentDialog")
+    .classList.remove("show");
 
 }
+
 
 function saveComment(){
 
   comments =
-    document.getElementById("commentInput").value.trim();
+    document
+      .getElementById("commentInput")
+      .value
+      .trim();
+
 
   updateCommentPreview();
+
   closeComment();
 
 }
+
 
 function updateCommentPreview(){
 
   const preview =
     document.getElementById("commentPreview");
 
+
   if(!preview){
     return;
   }
 
+
   const text =
-    typeof comments === "string" ? comments.trim() : "";
+    typeof comments === "string"
+    ? comments.trim()
+    : "";
+
 
   if(text){
-    preview.style.display = "block";
+
+    preview.style.display =
+      "block";
+
+
     preview.innerHTML =
-      `<strong>Comment:</strong><br>${escapeHTML(text).replace(/\n/g, "<br>")}`;
+      `<strong>Comment:</strong><br>` +
+      escapeHTML(text)
+        .replace(/\n/g,"<br>");
+
   }else{
-    preview.style.display = "none";
-    preview.innerHTML = "";
+
+    preview.style.display =
+      "none";
+
+    preview.innerHTML =
+      "";
+
   }
 
 }
 
+
 function escapeHTML(text){
 
-  const div = document.createElement("div");
-  div.textContent = text;
+  const div =
+    document.createElement("div");
+
+  div.textContent =
+    text;
+
   return div.innerHTML;
 
 }
 
+
+
+/*
+==========================================================
+CALCULATE DEDUCTION
+==========================================================
+*/
+
 function calculateDeduction(){
 
-  let total = 0;
+  let total =
+    0;
 
 
   missed.forEach(i=>{
@@ -807,6 +1105,12 @@ function calculateDeduction(){
 
 
 
+/*
+==========================================================
+UPDATE SCORE
+==========================================================
+*/
+
 function updateScore(){
 
   const deduction =
@@ -821,7 +1125,6 @@ function updateScore(){
 
 
   document.getElementById("score").innerHTML =
-
     `${score}<small>POINTS</small>`;
 
 
@@ -841,6 +1144,12 @@ function updateScore(){
 
 
 
+/*
+==========================================================
+CLEAR CURRENT INSPECTION
+==========================================================
+*/
+
 function clearInspection(){
 
   missed.clear();
@@ -851,7 +1160,15 @@ function clearInspection(){
 
   updateCommentPreview();
 
-  document.getElementById("cadet").value = "";
+
+  /*
+    IMPORTANT:
+    The selected block and cadet are NOT cleared.
+
+    This means you can clear an inspection
+    without having to select the cadet again.
+  */
+
 
   renderItems();
 
@@ -859,14 +1176,24 @@ function clearInspection(){
 
 
 
+/*
+==========================================================
+TOAST
+==========================================================
+*/
+
 function toast(t){
 
   const x =
     document.getElementById("toast");
 
-  x.textContent = t;
 
-  x.style.display = "block";
+  x.textContent =
+    t;
+
+
+  x.style.display =
+    "block";
 
 
   setTimeout(
@@ -878,17 +1205,39 @@ function toast(t){
 
 
 
+/*
+==========================================================
+SAVE INSPECTION
+==========================================================
+*/
+
 function saveInspection(){
 
+  const block =
+    document.getElementById("block").value;
+
+
   const cadet =
-    document.getElementById("cadet")
-    .value
-    .trim();
+    document.getElementById("cadet").value;
+
+
+  /*
+    Make sure both a block and cadet
+    have been selected.
+  */
+
+  if(!block){
+
+    toast("Select a block first.");
+
+    return;
+
+  }
 
 
   if(!cadet){
 
-    toast("Enter a cadet name first.");
+    toast("Select a cadet first.");
 
     return;
 
@@ -925,7 +1274,12 @@ function saveInspection(){
   const rec = {
 
     date:
-      document.getElementById("date").value,
+      document
+        .getElementById("date")
+        .value,
+
+    block:
+      block,
 
     cadet:
       cadet,
@@ -937,7 +1291,9 @@ function saveInspection(){
       deduction,
 
     comment:
-      typeof comments === "string" ? comments : "",
+      typeof comments === "string"
+      ? comments
+      : "",
 
     missed:
       missedRequirements
@@ -956,7 +1312,14 @@ function saveInspection(){
 
   renderHistory();
 
+
   toast("Inspection saved.");
+
+
+  /*
+    Clear the inspection but keep
+    the selected block and cadet.
+  */
 
   clearInspection();
 
@@ -964,12 +1327,20 @@ function saveInspection(){
 
 
 
+/*
+==========================================================
+RENDER HISTORY
+==========================================================
+*/
+
 function renderHistory(){
 
   const body =
     document.getElementById("history");
 
-  body.innerHTML = "";
+
+  body.innerHTML =
+    "";
 
 
   document.getElementById("empty").style.display =
@@ -978,7 +1349,7 @@ function renderHistory(){
     : "block";
 
 
-  history.forEach(r=>{
+  history.forEach((r,index)=>{
 
     const tr =
       document.createElement("tr");
@@ -1028,6 +1399,10 @@ function renderHistory(){
       </td>
 
       <td>
+        ${escapeHtml(r.block || "—")}
+      </td>
+
+      <td>
         ${escapeHtml(r.cadet || "")}
       </td>
 
@@ -1040,7 +1415,10 @@ function renderHistory(){
       </td>
 
       <td>
-        <button class="delete-history-btn" onclick="deleteInspection(${history.indexOf(r)})">
+        <button
+          class="delete-history-btn"
+          onclick="deleteInspection(${index})"
+        >
           Delete
         </button>
       </td>
@@ -1055,6 +1433,12 @@ function renderHistory(){
 }
 
 
+
+/*
+==========================================================
+HTML ESCAPE
+==========================================================
+*/
 
 function escapeHtml(s){
 
@@ -1073,29 +1457,55 @@ function escapeHtml(s){
 
 
 
+/*
+==========================================================
+DELETE INSPECTION
+==========================================================
+*/
+
 function deleteInspection(index){
 
-  const inspection = history[index];
+  const inspection =
+    history[index];
+
 
   if(!inspection){
     return;
   }
 
-  if(confirm(`Delete the inspection for ${inspection.cadet || "this cadet"}?`)){
 
-    history.splice(index, 1);
+  if(
+    confirm(
+      `Delete the inspection for ${
+        inspection.cadet || "this cadet"
+      }?`
+    )
+  ){
+
+    history.splice(index,1);
+
 
     localStorage.setItem(
       "njrotcInspectionHistory",
       JSON.stringify(history)
     );
 
+
     renderHistory();
+
     toast("Inspection deleted.");
+
   }
 
 }
 
+
+
+/*
+==========================================================
+CLEAR HISTORY
+==========================================================
+*/
 
 function clearHistory(){
 
@@ -1107,9 +1517,11 @@ function clearHistory(){
 
     history = [];
 
+
     localStorage.removeItem(
       "njrotcInspectionHistory"
     );
+
 
     renderHistory();
 
@@ -1119,22 +1531,38 @@ function clearHistory(){
 
 
 
+/*
+==========================================================
+EXPORT CURRENT INSPECTION PDF
+==========================================================
+*/
+
 function exportPDF(){
 
+  const block =
+    document.getElementById("block").value;
+
+
   const cadet =
-    document.getElementById("cadet")
-    .value
-    .trim();
+    document.getElementById("cadet").value;
 
 
   const date =
-    document.getElementById("date")
-    .value;
+    document.getElementById("date").value;
+
+
+  if(!block){
+
+    toast("Select a block first.");
+
+    return;
+
+  }
 
 
   if(!cadet){
 
-    toast("Enter a cadet name first.");
+    toast("Select a cadet first.");
 
     return;
 
@@ -1190,9 +1618,15 @@ function exportPDF(){
   );
 
   pdf.text(
-    `Date: ${date}`,
+    `Block: ${block}`,
     20,
     40
+  );
+
+  pdf.text(
+    `Date: ${date}`,
+    20,
+    48
   );
 
 
@@ -1207,7 +1641,7 @@ function exportPDF(){
   pdf.text(
     `Score: ${score}/100`,
     20,
-    55
+    63
   );
 
 
@@ -1218,7 +1652,7 @@ function exportPDF(){
   pdf.text(
     `Total Deduction: ${deduction} points`,
     20,
-    63
+    71
   );
 
 
@@ -1226,7 +1660,8 @@ function exportPDF(){
     REQUIREMENTS
   */
 
-  let y = 75;
+  let y =
+    83;
 
 
   requirements.forEach((r,i)=>{
@@ -1276,7 +1711,9 @@ function exportPDF(){
       y + 6
     );
 
+
     y += 16;
+
 
     if(y > 275){
 
@@ -1289,19 +1726,36 @@ function exportPDF(){
   });
 
 
+  /*
+    COMMENT
+  */
+
   if(comments && comments.trim()){
 
     if(y > 250){
+
       pdf.addPage();
+
       y = 20;
+
     }
 
+
     pdf.setFont(undefined,"bold");
+
     pdf.setFontSize(11);
-    pdf.text("Comment:", 20, y);
+
+    pdf.text(
+      "Comment:",
+      20,
+      y
+    );
+
 
     pdf.setFont(undefined,"normal");
+
     pdf.setFontSize(9);
+
 
     const commentLines =
       pdf.splitTextToSize(
@@ -1309,12 +1763,15 @@ function exportPDF(){
         165
       );
 
+
     pdf.text(
       commentLines,
       20,
       y + 6
     );
+
   }
+
 
   /*
     SAVE
@@ -1337,15 +1794,20 @@ function exportPDF(){
 }
 
 
+
 /*
-  EXPORT INSPECTION HISTORY PDF
+==========================================================
+EXPORT INSPECTION HISTORY PDF
+==========================================================
 */
 
 function exportHistoryPDF(){
 
   if(history.length === 0){
 
-    toast("There is no inspection history to export.");
+    toast(
+      "There is no inspection history to export."
+    );
 
     return;
 
@@ -1394,39 +1856,55 @@ function exportHistoryPDF(){
     TABLE SETTINGS
   */
 
-  const startY = 34;
+  const startY =
+    34;
 
-  const margin = 14;
+  const margin =
+    14;
 
-  const pageWidth = 279;
+  const pageWidth =
+    279;
 
   const tableWidth =
     pageWidth - (margin * 2);
 
 
-  const dateWidth = 32;
+  const dateWidth =
+    28;
 
-  const cadetWidth = 55;
+  const blockWidth =
+    25;
 
-  const scoreWidth = 25;
+  const cadetWidth =
+    50;
+
+  const scoreWidth =
+    25;
 
   const missedWidth =
     tableWidth -
     dateWidth -
+    blockWidth -
     cadetWidth -
     scoreWidth;
 
 
-  const rowHeight = 10;
+  const rowHeight =
+    10;
 
 
   /*
-    DRAW TABLE HEADER
+    DRAW HEADER
   */
 
   function drawHeader(y){
 
-    pdf.setFillColor(230,235,240);
+    pdf.setFillColor(
+      230,
+      235,
+      240
+    );
+
 
     pdf.rect(
       margin,
@@ -1437,7 +1915,12 @@ function exportHistoryPDF(){
     );
 
 
-    pdf.setDrawColor(180,188,198);
+    pdf.setDrawColor(
+      180,
+      188,
+      198
+    );
+
 
     pdf.rect(
       margin,
@@ -1460,8 +1943,20 @@ function exportHistoryPDF(){
 
 
     pdf.text(
+      "Block",
+      margin +
+      dateWidth +
+      3,
+      y
+    );
+
+
+    pdf.text(
       "Cadet",
-      margin + dateWidth + 3,
+      margin +
+      dateWidth +
+      blockWidth +
+      3,
       y
     );
 
@@ -1470,6 +1965,7 @@ function exportHistoryPDF(){
       "Score",
       margin +
       dateWidth +
+      blockWidth +
       cadetWidth +
       3,
       y
@@ -1480,6 +1976,7 @@ function exportHistoryPDF(){
       "Missed Requirements",
       margin +
       dateWidth +
+      blockWidth +
       cadetWidth +
       scoreWidth +
       3,
@@ -1489,7 +1986,9 @@ function exportHistoryPDF(){
   }
 
 
-  let y = startY;
+  let y =
+    startY;
+
 
   drawHeader(y);
 
@@ -1502,7 +2001,8 @@ function exportHistoryPDF(){
 
   history.forEach((r,index)=>{
 
-    let missedText = "None";
+    let missedText =
+      "None";
 
 
     if(Array.isArray(r.missed)){
@@ -1526,14 +2026,18 @@ function exportHistoryPDF(){
 
 
     if(r.comment && r.comment.trim()){
-      missedText += (missedText === "None" ? "" : " | ") +
+
+      missedText +=
+        (missedText === "None"
+          ? ""
+          : " | ") +
         `Comment: ${r.comment.trim()}`;
+
     }
 
 
     /*
-      Split long missed-requirement text
-      so it fits inside the table.
+      Split long text
     */
 
     pdf.setFontSize(8);
@@ -1563,7 +2067,7 @@ function exportHistoryPDF(){
 
 
     /*
-      Add a new page if necessary
+      New page
     */
 
     if(y + actualRowHeight > 195){
@@ -1580,10 +2084,15 @@ function exportHistoryPDF(){
 
 
     /*
-      Draw row border
+      Row border
     */
 
-    pdf.setDrawColor(210,216,224);
+    pdf.setDrawColor(
+      210,
+      216,
+      224
+    );
+
 
     pdf.rect(
       margin,
@@ -1594,7 +2103,7 @@ function exportHistoryPDF(){
 
 
     /*
-      Vertical column lines
+      Vertical lines
     */
 
     pdf.line(
@@ -1606,23 +2115,49 @@ function exportHistoryPDF(){
 
 
     pdf.line(
-      margin + dateWidth + cadetWidth,
+      margin +
+      dateWidth +
+      blockWidth,
       y - 7,
-      margin + dateWidth + cadetWidth,
+      margin +
+      dateWidth +
+      blockWidth,
       y - 7 + actualRowHeight
     );
 
 
     pdf.line(
-      margin + dateWidth + cadetWidth + scoreWidth,
+      margin +
+      dateWidth +
+      blockWidth +
+      cadetWidth,
       y - 7,
-      margin + dateWidth + cadetWidth + scoreWidth,
+      margin +
+      dateWidth +
+      blockWidth +
+      cadetWidth,
+      y - 7 + actualRowHeight
+    );
+
+
+    pdf.line(
+      margin +
+      dateWidth +
+      blockWidth +
+      cadetWidth +
+      scoreWidth,
+      y - 7,
+      margin +
+      dateWidth +
+      blockWidth +
+      cadetWidth +
+      scoreWidth,
       y - 7 + actualRowHeight
     );
 
 
     /*
-      Date
+      DATE
     */
 
     pdf.text(
@@ -1633,18 +2168,34 @@ function exportHistoryPDF(){
 
 
     /*
-      Cadet
+      BLOCK
     */
 
     pdf.text(
-      String(r.cadet || ""),
-      margin + dateWidth + 3,
+      String(r.block || "—"),
+      margin +
+      dateWidth +
+      3,
       y
     );
 
 
     /*
-      Score
+      CADET
+    */
+
+    pdf.text(
+      String(r.cadet || ""),
+      margin +
+      dateWidth +
+      blockWidth +
+      3,
+      y
+    );
+
+
+    /*
+      SCORE
     */
 
     pdf.setFont(undefined,"bold");
@@ -1653,6 +2204,7 @@ function exportHistoryPDF(){
       `${r.score}/100`,
       margin +
       dateWidth +
+      blockWidth +
       cadetWidth +
       3,
       y
@@ -1660,7 +2212,7 @@ function exportHistoryPDF(){
 
 
     /*
-      Missed requirements
+      MISSED REQUIREMENTS
     */
 
     pdf.setFont(undefined,"normal");
@@ -1669,6 +2221,7 @@ function exportHistoryPDF(){
       missedLines,
       margin +
       dateWidth +
+      blockWidth +
       cadetWidth +
       scoreWidth +
       3,
@@ -1682,7 +2235,7 @@ function exportHistoryPDF(){
 
 
   /*
-    SAVE PDF
+    SAVE
   */
 
   pdf.save(
@@ -1690,11 +2243,19 @@ function exportHistoryPDF(){
   );
 
 
-  toast("History PDF exported.");
+  toast(
+    "History PDF exported."
+  );
 
 }
 
 
+
+/*
+==========================================================
+INITIALIZE
+==========================================================
+*/
 
 renderItems();
 
@@ -1704,4 +2265,3 @@ renderHistory();
 
 </body>
 </html>
-```
