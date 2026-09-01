@@ -365,6 +365,9 @@ th{
   </button>
 </div>
 
+<div id="commentPreview" style="margin-top:10px; padding:10px; border:1px solid var(--border); border-radius:9px; background:#f8fafc; display:none;">
+</div>
+
 </section>
 
 
@@ -544,7 +547,7 @@ let missed = new Set();
 
 let deductions = {};
 
-let comments = {};
+let comments = "";
 
 let history = JSON.parse(
   localStorage.getItem("njrotcInspectionHistory") || "[]"
@@ -553,6 +556,8 @@ let history = JSON.parse(
 
 document.getElementById("date").value =
   new Date().toISOString().slice(0,10);
+
+updateCommentPreview();
 
 
 
@@ -725,7 +730,7 @@ function setDeduction(i,value){
 function openComment(){
 
   document.getElementById("commentInput").value =
-    comments || "";
+    typeof comments === "string" ? comments : "";
 
   document.getElementById("commentDialog").classList.add("show");
 
@@ -747,7 +752,39 @@ function saveComment(){
   comments =
     document.getElementById("commentInput").value.trim();
 
+  updateCommentPreview();
   closeComment();
+
+}
+
+function updateCommentPreview(){
+
+  const preview =
+    document.getElementById("commentPreview");
+
+  if(!preview){
+    return;
+  }
+
+  const text =
+    typeof comments === "string" ? comments.trim() : "";
+
+  if(text){
+    preview.style.display = "block";
+    preview.innerHTML =
+      `<strong>Comment:</strong><br>${escapeHTML(text).replace(/\n/g, "<br>")}`;
+  }else{
+    preview.style.display = "none";
+    preview.innerHTML = "";
+  }
+
+}
+
+function escapeHTML(text){
+
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 
 }
 
@@ -810,7 +847,9 @@ function clearInspection(){
 
   deductions = {};
 
-  comments = {};
+  comments = "";
+
+  updateCommentPreview();
 
   document.getElementById("cadet").value = "";
 
@@ -898,7 +937,7 @@ function saveInspection(){
       deduction,
 
     comment:
-      comments || "",
+      typeof comments === "string" ? comments : "",
 
     missed:
       missedRequirements
