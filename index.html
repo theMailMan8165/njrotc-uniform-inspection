@@ -439,8 +439,8 @@ th{
     Inspection History
   </h2>
 
-  <button class="secondary" onclick="exportHistoryPDF()">
-    Export History PDF
+  <button class="secondary" onclick="exportToGoogleSheets()">
+    Export to Google Sheets
   </button>
 
 </div>
@@ -1603,6 +1603,105 @@ function clearHistory(){
 
 }
 
+
+
+/*
+==========================================================
+GOOGLE SHEETS EXPORT
+==========================================================
+
+PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BELOW.
+
+Example:
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/XXXXXXXXXXXX/exec";
+
+The Apps Script receives every saved inspection in localStorage
+and adds only inspections that have not already been exported.
+==========================================================
+*/
+
+const GOOGLE_SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+
+async function exportToGoogleSheets(){
+
+  if(history.length === 0){
+
+    toast("There is no inspection history to export.");
+
+    return;
+
+  }
+
+
+  if(
+    !GOOGLE_SCRIPT_URL ||
+    GOOGLE_SCRIPT_URL.includes("PASTE_YOUR")
+  ){
+
+    toast("Add your Google Apps Script URL first.");
+
+    return;
+
+  }
+
+
+  try{
+
+    toast("Exporting to Google Sheets...");
+
+
+    const response =
+      await fetch(
+        GOOGLE_SCRIPT_URL,
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":"text/plain;charset=utf-8"
+          },
+
+          body:JSON.stringify({
+            inspections:history
+          })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if(result.success){
+
+      toast(
+        `${result.added} new inspection(s) exported.`
+      );
+
+    }else{
+
+      throw new Error(
+        result.error ||
+        "Google Sheets export failed."
+      );
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "Google Sheets export error:",
+      error
+    );
+
+    toast(
+      "Export failed. Check the Apps Script URL."
+    );
+
+  }
+
+}
 
 
 /*
