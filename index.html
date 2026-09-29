@@ -188,6 +188,91 @@ button{
   margin-top:3px;
 }
 
+.merit-section{
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--border)
+}
+
+.merit-btn{
+  width:100%;
+  background:#eef7f2;
+  color:var(--good);
+  border:1px solid #b8d9c8
+}
+
+.merit-btn.has-merits{
+  background:#e3f2ea;
+  border-color:#8fc5a8;
+}
+
+.merit-preview{
+  margin-top:10px;
+  padding:10px;
+  border:1px solid #b8d9c8;
+  border-radius:9px;
+  background:#f3faf6;
+  display:none;
+  color:#205c3e;
+  font-size:13px;
+}
+
+.merit-dialog{
+  position:fixed;
+  inset:0;
+  background:#00000066;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:20;
+  padding:20px;
+}
+
+.merit-dialog.show{
+  display:flex;
+}
+
+.merit-box{
+  width:min(520px,100%);
+  background:white;
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 10px 35px #00000030;
+}
+
+.merit-box h3{
+  margin:0 0 6px;
+}
+
+.merit-box p{
+  margin:0 0 12px;
+  color:#667085;
+  font-size:13px;
+}
+
+.merit-option{
+  width:100%;
+  text-align:left;
+  margin-bottom:8px;
+  background:#f8fafc;
+  border:1px solid var(--border);
+}
+
+.merit-option:hover{
+  background:#eef7f2;
+  border-color:#b8d9c8;
+}
+
+.merit-option strong{
+  display:block;
+}
+
+.merit-option span{
+  font-size:12px;
+  color:#667085;
+}
+
+
 .max-text{
   font-size:11px;
   color:#667085;
@@ -411,6 +496,22 @@ th{
 >
 </div>
 
+
+<div class="merit-section">
+
+  <button
+    type="button"
+    id="meritButton"
+    class="merit-btn"
+    onclick="openMeritDialog()"
+  >
+    Award Merit
+  </button>
+
+  <div id="meritPreview" class="merit-preview"></div>
+
+</div>
+
 </section>
 
 
@@ -456,6 +557,7 @@ th{
   <th>Block</th>
   <th>Cadet</th>
   <th>Score</th>
+  <th>Merits</th>
   <th>Missed requirements</th>
   <th>Action</th>
 </tr>
@@ -479,6 +581,51 @@ th{
 
 <div id="toast"></div>
 
+
+
+<!-- MERIT WINDOW -->
+
+<div id="meritDialog" class="merit-dialog">
+
+  <div class="merit-box">
+
+    <h3>Award Merit</h3>
+
+    <p>Select a reason for awarding merit points.</p>
+
+    <button class="merit-option" type="button"
+      onclick="addMerit('Exceptional Military Bearing', 5)">
+      <strong>Exceptional Military Bearing — +5</strong>
+      <span>Outstanding bearing, discipline, and professionalism.</span>
+    </button>
+
+    <button class="merit-option" type="button"
+      onclick="addMerit('Outstanding Uniform Appearance', 5)">
+      <strong>Outstanding Uniform Appearance — +5</strong>
+      <span>Uniform is exceptionally sharp, clean, and well-maintained.</span>
+    </button>
+
+    <button class="merit-option" type="button"
+      onclick="addMerit('Exceptional Knowledge', 5)">
+      <strong>Exceptional Knowledge — +5</strong>
+      <span>Demonstrates knowledge beyond the normal inspection standard.</span>
+    </button>
+
+    <button class="merit-option" type="button"
+      onclick="addMerit('Extra Effort / Initiative', 3)">
+      <strong>Extra Effort — +3</strong>
+      <span>Shows notable effort, initiative, or attention to detail.</span>
+    </button>
+
+    <div class="comment-actions">
+      <button class="secondary" type="button" onclick="closeMeritDialog()">
+        Close
+      </button>
+    </div>
+
+  </div>
+
+</div>
 
 <!-- COMMENT WINDOW -->
 
@@ -838,6 +985,8 @@ let deductions =
 let comments =
   "";
 
+let merits = [];
+
 
 let history =
   JSON.parse(
@@ -852,6 +1001,7 @@ document.getElementById("date").value =
 
 
 updateCommentPreview();
+updateMeritPreview();
 
 
 
@@ -1043,6 +1193,100 @@ function setDeduction(i,value){
 
 
 
+
+/*
+==========================================================
+MERITS
+==========================================================
+*/
+
+function openMeritDialog(){
+
+  document
+    .getElementById("meritDialog")
+    .classList.add("show");
+
+}
+
+function closeMeritDialog(){
+
+  document
+    .getElementById("meritDialog")
+    .classList.remove("show");
+
+}
+
+function addMerit(name, points){
+
+  merits.push({
+    name: name,
+    points: points
+  });
+
+  updateMeritPreview();
+  updateScore();
+  closeMeritDialog();
+
+  toast(`Merit awarded: +${points}`);
+
+}
+
+function removeMerit(index){
+
+  merits.splice(index, 1);
+
+  updateMeritPreview();
+  updateScore();
+
+}
+
+function calculateMerits(){
+
+  return merits.reduce(
+    (total, merit) => total + (Number(merit.points) || 0),
+    0
+  );
+
+}
+
+function updateMeritPreview(){
+
+  const preview =
+    document.getElementById("meritPreview");
+
+  const button =
+    document.getElementById("meritButton");
+
+  if(!preview || !button){
+    return;
+  }
+
+  if(merits.length === 0){
+
+    preview.style.display = "none";
+    preview.innerHTML = "";
+    button.classList.remove("has-merits");
+
+    return;
+
+  }
+
+  button.classList.add("has-merits");
+
+  preview.style.display = "block";
+
+  preview.innerHTML =
+    `<strong>Merits: +${calculateMerits()} points</strong><br>` +
+    merits.map((merit,index) =>
+      `${escapeHTML(merit.name)} (+${merit.points}) ` +
+      `<button type="button" ` +
+      `style="padding:3px 7px;margin-left:5px;font-size:11px;" ` +
+      `onclick="removeMerit(${index})">Remove</button>`
+    ).join("<br>");
+
+}
+
+
 /*
 ==========================================================
 COMMENTS
@@ -1190,11 +1434,16 @@ function updateScore(){
   const deduction =
     calculateDeduction();
 
+  const meritPoints =
+    calculateMerits();
 
   const score =
-    Math.max(
-      0,
-      100 - deduction
+    Math.min(
+      100,
+      Math.max(
+        0,
+        100 - deduction + meritPoints
+      )
     );
 
 
@@ -1208,7 +1457,7 @@ function updateScore(){
 
     ?
 
-    `${missed.size} item(s) missed • ${deduction} point(s) deducted`
+    `${missed.size} item(s) missed • ${deduction} point(s) deducted • +${meritPoints} merit`
 
     :
 
@@ -1231,8 +1480,10 @@ function clearInspection(){
   deductions = {};
 
   comments = "";
+  merits = [];
 
   updateCommentPreview();
+  updateMeritPreview();
 
 
   /*
@@ -1322,10 +1573,16 @@ function saveInspection(){
     calculateDeduction();
 
 
+  const meritPoints =
+    calculateMerits();
+
   const score =
-    Math.max(
-      0,
-      100 - deduction
+    Math.min(
+      100,
+      Math.max(
+        0,
+        100 - deduction + meritPoints
+      )
     );
 
 
@@ -1363,6 +1620,15 @@ function saveInspection(){
 
     deduction:
       deduction,
+
+    merits:
+      merits.map(merit => ({
+        name: merit.name,
+        points: merit.points
+      })),
+
+    meritPoints:
+      meritPoints,
 
     comment:
       typeof comments === "string"
@@ -1482,6 +1748,15 @@ function renderHistory(){
 
       <td>
         <b>${r.score}</b>
+      </td>
+
+      <td>
+        ${
+          Array.isArray(r.merits) && r.merits.length
+          ? "+" + (r.meritPoints || r.merits.reduce((sum,m) =>
+              sum + (typeof m === "object" ? Number(m.points) || 0 : 0), 0))
+          : "—"
+        }
       </td>
 
       <td>
@@ -1754,10 +2029,16 @@ function exportPDF(){
     calculateDeduction();
 
 
+  const meritPoints =
+    calculateMerits();
+
   const score =
-    Math.max(
-      0,
-      100 - deduction
+    Math.min(
+      100,
+      Math.max(
+        0,
+        100 - deduction + meritPoints
+      )
     );
 
 
@@ -1828,13 +2109,19 @@ function exportPDF(){
     71
   );
 
+  pdf.text(
+    `Merit Points: +${meritPoints}`,
+    20,
+    78
+  );
+
 
   /*
     REQUIREMENTS
   */
 
   let y =
-    83;
+    90;
 
 
   requirements.forEach((r,i)=>{
@@ -2197,6 +2484,24 @@ function exportHistoryPDF(){
 
     }
 
+
+    if(Array.isArray(r.merits) && r.merits.length){
+
+      const meritText =
+        r.merits.map(item => {
+          if(typeof item === "string"){
+            return item;
+          }
+          return `${item.name} (+${item.points})`;
+        }).join(", ");
+
+      missedText +=
+        (missedText === "None"
+          ? ""
+          : " | ") +
+        `Merits: ${meritText}`;
+
+    }
 
     if(r.comment && r.comment.trim()){
 
