@@ -399,10 +399,136 @@ th{
   border-radius:9px;
   display:none;
 }
+
+/* Weekly password gate */
+#loginScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(145deg, #dd9104, rgb(106, 61, 10));
+}
+
+.login-card {
+  width: 100%;
+  max-width: 410px;
+  padding: 32px;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #17202a;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.login-mark {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 18px;
+  border-radius: 16px;
+  background: #0b1f33;
+  color: #ffffff;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.login-card h2 {
+  margin: 0 0 8px;
+  color: #0b1f33;
+  font-size: 23px;
+}
+
+.login-card p {
+  margin: 0 0 22px;
+  color: #5d6874;
+  line-height: 1.5;
+}
+
+#accessPassword {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5df;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #17202a;
+  font: inherit;
+  font-size: 16px;
+}
+
+#accessPassword:focus {
+  outline: 3px solid rgba(22, 74, 115, 0.18);
+  border-color: #164a73;
+}
+
+#unlockButton {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 9px;
+  background: #0b1f33;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#unlockButton:hover {
+  background: #164a73;
+}
+
+#loginError {
+  min-height: 20px;
+  margin: 12px 0 0;
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-footer {
+  margin-top: 20px;
+  color: #7a8794;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
 </style>
 </head>
 
 <body>
+
+<div id="loginScreen" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="login-card">
+
+    <div class="logo">
+      <img src="favicon.png" alt="Logo">
+    </div>
+
+    <h2 id="loginTitle">NJROTC Uniform Inspection</h2>
+    <p>Enter the weekly access password to open the inspection scorer.</p>
+
+    <input
+      type="password"
+      id="accessPassword"
+      placeholder="Weekly access password"
+      autocomplete="current-password"
+      aria-label="Weekly access password"
+    >
+
+    <button type="button" id="unlockButton">Unlock Inspection System</button>
+    <div id="loginError" role="alert" aria-live="polite"></div>
+    <div class="login-footer">Authorized access only</div>
+  </div>
+</div>
+
 
 <header>
   <h1>NJROTC Uniform Inspection</h1>
@@ -2892,6 +3018,46 @@ function exportHistoryPDF(){
 
 }
 
+
+
+
+/*
+==========================================================
+WEEKLY PASSWORD GATE
+Change WEEKLY_PASSWORD whenever you want to update access.
+This is a basic deterrent only: GitHub Pages publishes the
+HTML/JavaScript, so this is not secure authentication.
+==========================================================
+*/
+
+const WEEKLY_PASSWORD = "CHANGE-ME-WEEKLY";
+
+function unlockWebsite() {
+  const passwordInput = document.getElementById("accessPassword");
+  const errorMessage = document.getElementById("loginError");
+
+  if (passwordInput.value === WEEKLY_PASSWORD) {
+    document.getElementById("loginScreen").style.display = "none";
+    errorMessage.textContent = "";
+    document.body.style.overflow = "";
+  } else {
+    errorMessage.textContent = "Incorrect password. Please try again.";
+    passwordInput.value = "";
+    passwordInput.focus();
+  }
+}
+
+document.getElementById("unlockButton").addEventListener("click", unlockWebsite);
+
+document.getElementById("accessPassword").addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    unlockWebsite();
+  }
+});
+
+// Keep the page from scrolling behind the login screen.
+document.body.style.overflow = "hidden";
+document.getElementById("accessPassword").focus();
 
 
 /*
