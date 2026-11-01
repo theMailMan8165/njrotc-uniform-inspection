@@ -415,6 +415,18 @@ th{
 
 <div class="row">
 
+<!-- NS LEVEL DROPDOWN -->
+<div class="field">
+  <label>NS Level</label>
+  <select id="nsLevel">
+    <option value="">Select NS level...</option>
+    <option value="NS1">NS1</option>
+    <option value="NS2">NS2</option>
+    <option value="NS3">NS3</option>
+    <option value="NS4">NS4</option>
+  </select>
+</div>
+
 <!-- BLOCK DROPDOWN -->
 <div class="field">
   <label>Block</label>
@@ -554,6 +566,7 @@ th{
 
 <tr>
   <th>Date</th>
+  <th>NS Level</th>
   <th>Block</th>
   <th>Cadet</th>
   <th>Score</th>
@@ -705,7 +718,7 @@ const cadetsByBlock = {
     "Bey, Zada",
     "Boston, Bernard",
     "Canaveral Ortiz, Angeline",
-    "Cervantes, Joanna"
+    "Cervantes, Joanna",
     "Coleman, Demetris",
     "Combs, Kirsten",
     "Cruz Pinales, Altagracia",
@@ -1600,6 +1613,9 @@ SAVE INSPECTION
 
 function saveInspection(){
 
+  const nsLevel =
+    document.getElementById("nsLevel").value;
+
   const block =
     document.getElementById("block").value;
 
@@ -1612,6 +1628,15 @@ function saveInspection(){
     Make sure both a block and cadet
     have been selected.
   */
+
+  if(!nsLevel){
+
+    toast("Select an NS level first.");
+
+    return;
+
+  }
+
 
   if(!block){
 
@@ -1670,6 +1695,9 @@ function saveInspection(){
       document
         .getElementById("date")
         .value,
+
+    nsLevel:
+      nsLevel,
 
     block:
       block,
@@ -1798,6 +1826,10 @@ function renderHistory(){
 
       <td>
         ${escapeHtml(r.date || "")}
+      </td>
+
+      <td>
+        ${escapeHtml(r.nsLevel || "—")}
       </td>
 
       <td>
@@ -2127,6 +2159,9 @@ function exportPDF(){
 
   pdf.setFont(undefined,"normal");
 
+  const nsLevel =
+    document.getElementById("nsLevel").value;
+
   pdf.text(
     `Cadet: ${cadet}`,
     20,
@@ -2134,15 +2169,21 @@ function exportPDF(){
   );
 
   pdf.text(
-    `Block: ${block}`,
+    `NS Level: ${nsLevel}`,
     20,
     40
   );
 
   pdf.text(
-    `Date: ${date}`,
+    `Block: ${block}`,
     20,
     48
+  );
+
+  pdf.text(
+    `Date: ${date}`,
+    20,
+    56
   );
 
 
@@ -2157,7 +2198,7 @@ function exportPDF(){
   pdf.text(
     `Score: ${score}/100`,
     20,
-    63
+    71
   );
 
 
@@ -2394,6 +2435,9 @@ function exportHistoryPDF(){
   const dateWidth =
     28;
 
+  const nsLevelWidth =
+    22;
+
   const blockWidth =
     25;
 
@@ -2406,6 +2450,7 @@ function exportHistoryPDF(){
   const missedWidth =
     tableWidth -
     dateWidth -
+    nsLevelWidth -
     blockWidth -
     cadetWidth -
     scoreWidth;
@@ -2465,9 +2510,19 @@ function exportHistoryPDF(){
 
 
     pdf.text(
+      "NS Level",
+      margin +
+      dateWidth +
+      3,
+      y
+    );
+
+
+    pdf.text(
       "Block",
       margin +
       dateWidth +
+      nsLevelWidth +
       3,
       y
     );
@@ -2477,6 +2532,7 @@ function exportHistoryPDF(){
       "Cadet",
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       3,
       y
@@ -2487,6 +2543,7 @@ function exportHistoryPDF(){
       "Score",
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth +
       3,
@@ -2498,6 +2555,7 @@ function exportHistoryPDF(){
       "Missed Requirements",
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth +
       scoreWidth +
@@ -2656,11 +2714,35 @@ function exportHistoryPDF(){
 
     pdf.line(
       margin +
+      dateWidth,
+      y - 7,
+      margin +
+      dateWidth,
+      y - 7 + actualRowHeight
+    );
+
+
+    pdf.line(
+      margin +
       dateWidth +
+      nsLevelWidth,
+      y - 7,
+      margin +
+      dateWidth +
+      nsLevelWidth,
+      y - 7 + actualRowHeight
+    );
+
+
+    pdf.line(
+      margin +
+      dateWidth +
+      nsLevelWidth +
       blockWidth,
       y - 7,
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth,
       y - 7 + actualRowHeight
     );
@@ -2669,11 +2751,13 @@ function exportHistoryPDF(){
     pdf.line(
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth,
       y - 7,
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth,
       y - 7 + actualRowHeight
@@ -2683,12 +2767,14 @@ function exportHistoryPDF(){
     pdf.line(
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth +
       scoreWidth,
       y - 7,
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth +
       scoreWidth,
@@ -2708,6 +2794,19 @@ function exportHistoryPDF(){
 
 
     /*
+      NS LEVEL
+    */
+
+    pdf.text(
+      String(r.nsLevel || "—"),
+      margin +
+      dateWidth +
+      3,
+      y
+    );
+
+
+    /*
       BLOCK
     */
 
@@ -2715,6 +2814,7 @@ function exportHistoryPDF(){
       String(r.block || "—"),
       margin +
       dateWidth +
+      nsLevelWidth +
       3,
       y
     );
@@ -2728,6 +2828,7 @@ function exportHistoryPDF(){
       String(r.cadet || ""),
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       3,
       y
@@ -2744,6 +2845,7 @@ function exportHistoryPDF(){
       `${r.score}/100`,
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth +
       3,
@@ -2761,6 +2863,7 @@ function exportHistoryPDF(){
       missedLines,
       margin +
       dateWidth +
+      nsLevelWidth +
       blockWidth +
       cadetWidth +
       scoreWidth +
